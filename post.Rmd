@@ -1,0 +1,108 @@
+---
+title: "kenyadecides"
+author: "Ayodeji Akiwowo"
+date: "9 August 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Twitter Data Analysis with R – Text Mining and Social Network Analysis 
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+### Load relevat packages
+```{r}
+library(ROAuth)
+library(twitteR)
+library(tm)
+library(igraph)
+library(topicmodels)
+library(devtools)
+library(sentiment)
+library(RTextTools)
+library(e1071)
+```
+
+### Retrive Tweets
+
+Define variables (use your own values from twitter app)
+```{r}
+consumer_key <- "8u4rJMnrY7RWmmyHKgWPHDiHM"
+consumer_secret <- "YWFGjmGC5fwLhHEsrrz5hryH9O3PNnpvrr6cs7cF9JO4jopuSl"
+access_token <- "30092470-fiYuylUZ8enKfZ0c6vE7V9YY4oeRgnpT725rMJl7g"
+access_secret <- "PckxdG4ChNFLqPUfprPHsWnEputnxLwTAG7jNJ5Ligd4v"
+
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+
+tweets <- searchTwitter('#KenyaDecides', n=3000, lang='en')
+```
+### Store the data
+```{r}
+saveRDS(tweets, 'kenyatweets.RDS')
+readTweets <- readRDS('kenyatweets.RDS')
+tweetDF = twListToDF(readTweets) # convert to dataframe
+```
+
+### Analyse the Data
+
+Investigate the dataframe
+
+```{r}
+names(tweetDF) # list the variable names
+```
+
+```{r}
+summary(tweetDF) # summary analysis. We can see longitude and latitude 
+# have 3000 NA's implying 0 data. Some tweets received 1263 retweets (max) 
+# and 96 favourites. 3000 Tweets collected between 09:09:55 and 11:08:48 
+# on 09/08/2017
+```
+We can also view the top and bottom 2 data
+
+```{r}
+head(tweetDF, 2)
+tail(tweetDF, 2)
+```
+
+
+```{r}
+tweetDT <- data.table(tweetDF, key="retweetCount")
+tweetDT <- tweetDT[order(retweetCount),] 
+topFavorites <- tail(tweetDT, 10)
+View(topFavorites)
+```
+
+
+We can view the number of retweets over the time period
+```{r}
+ggplot(tweetDF, aes(x=created, y=retweetCount)) + geom_smooth()
+```
+
+Who has spent time tweeting on this hashtag?
+```{r}
+counts <- table(tweetDF$screenName)
+counts <- subset(counts, counts > 5)
+barplot(counts, las=2, cex.names = 0.7)
+```
+
+Well done @KBCChannel! Top user of this hashtag within the time period with over 50 tweets or about 1.7% f all tweets.
+
+```{r}
+sentiments <- sentiment(tweetDF$text)
+table(sentiments$polarity)
+
+```
+
+
+```{r}
+uniqueN(tweetDF$screenName)
+
+```
+
+
+
